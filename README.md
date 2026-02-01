@@ -40,7 +40,18 @@ The application will automatically open in your default web browser at `http://l
    - Upload files without prefix in the left column (keeps original HOLE_ID/LOCA_ID)
    - Upload files with prefix in the right column (adds first 5 alphanumeric characters of filename + '_')
 3. **View combined data**: Browse the combined groups and download results as CSV
-4. (under development)  **Concat data columns**: Prompt the user to choose needed columns >>>> Extract data from columns ('CORE','DETL','WETH','FRAC','GEOL', 'SAMP' only) >>>  concat according to depth (ie using WETH_TOP, WETH_BASE, DETL_TOP, DETL_BASE of each needed group) 
+4. (under development)  **Concat data columns**:
+   
+   Prompt the user to choose needed columns >>>>
+   Extract data from columns ('CORE','DETL','WETH','FRAC','GEOL','SAMP')>>>    concat according to depth (ie using WETH_TOP, WETH_BASE, DETL_TOP, DETL_BASE of each needed group and transforming into bigger database DEPTH_FROM and DEPTH_TO) >>>>
+   allow download as csv
+
+   (under development) >>> handling group and column names that start with '?' to merge with their equivalent
+
+   
+
+   
+   
 ## File Structure
 
 - `workingapp.py` - Main Streamlit application
