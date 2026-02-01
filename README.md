@@ -40,6 +40,7 @@ The application will automatically open in your default web browser at `http://l
    - Upload files without prefix in the left column (keeps original HOLE_ID/LOCA_ID)
    - Upload files with prefix in the right column (adds first 5 alphanumeric characters of filename + '_')
 3. **View combined data**: Browse the combined groups and download results as CSV
+4. (under development)  **Concat data columns**: Extract data from columns ('CORE','DETL','WETH','FRAC','GEOL')  and concat according to depths
 
 ## File Structure
 
@@ -47,6 +48,7 @@ The application will automatically open in your default web browser at `http://l
 - `agsparser.py` - AGS file parsing utilities
 - `cleaners.py` - Data cleaning and combining functions
 - `ags_data/` - Sample AGS files for testing
+- `AGS4.py` - official source for ags4 data processing to which reference should be made
 
 ## Requirements
 
