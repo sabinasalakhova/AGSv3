@@ -28,7 +28,7 @@ An interactive web application for processing and combining AGS (Association of 
 To run the AGS File Processor web application, use the following command:
 
 ```bash
-streamlit run workingapp.py
+streamlit run app.py
 ```
 
 The application will automatically open in your default web browser at `http://localhost:8501`.
