@@ -3,7 +3,7 @@ import pandas as pd
 import re
 from typing import List, Tuple, Dict
 from io import BytesIO
-
+from python_ags4 import AGS4
 
 from agsparser import (
     analyze_ags_content,
@@ -15,21 +15,14 @@ from cleaners import combine_groups
 #STREAMLIT PAGE CONFIGURATION
 # ────────────────────────────────────────────────
 
-# Aurecon colors
-AURECON_GREEN = "#84BD00"
-AURECON_DARK = "#1A1A1A"
-
 st.set_page_config(page_title="AGS File Processor", layout="wide")
 
 st.title("AGS File Processor")
-st.markdown(
-    f"<hr style='border-top: 4px solid {AURECON_GREEN}; margin: 0 0 30px 0;'>",
-    unsafe_allow_html=True
-)
-st.markdown("Upload AGS3 or AGS4 files → combine with optional prefix on location IDs.")
+st.divider()
+st.write("Upload AGS3 or AGS4 files for processing")
 
 # ────────────────────────────────────────────────
-# PROMPT USER TO CHOOSE AGS3 OR AGS4 (ST PAGE)
+# Version Choice
 # ────────────────────────────────────────────────
 st.subheader("Select AGS version mode")
 mode = st.radio(
@@ -54,24 +47,26 @@ else:
 # ────────────────────────────────────────────────
 st.subheader("Upload files")
 
+file_types = ["ags", "txt", "ags4"]
+
 col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("No prefix")
     st.caption("Original HOLE_ID / LOCA_ID")
     files_no_prefix = st.file_uploader(
-        "Upload files (no prefix)",
-        type=["ags", "txt", "dat", "ags4"],
-        accept_multiple_files=True,
-        key="no_prefix"
-    )
+    "Upload files (no prefix)",
+    type=file_types,
+    accept_multiple_files=True,
+    key="no_prefix" )
+
 
 with col2:
     st.subheader("With prefix")
-    st.caption("Adds first 5 alphanum chars of filename + '_'")
+    st.caption("Prefix = first 5 chars of filename + '_'")
     files_with_prefix = st.file_uploader(
         "Upload files (with prefix)",
-        type=["ags", "txt", "dat", "ags4"],
+        type=file_types,
         accept_multiple_files=True,
         key="with_prefix"
     )
@@ -99,9 +94,11 @@ st.success(f"**{len(all_uploaded)} file(s)** ready for processing in **{mode}** 
 # ────────────────────────────────────────────────
 # Processing with progress & warnings
 # ────────────────────────────────────────────────
-all_group_dfs: List[Tuple[str, Dict[str, pd.DataFrame]]] = []   # exactly what combine_groups expects
+all_group_dfs: List[Tuple[str, Dict[str, pd.DataFrame]]] = []   #expected structure for later combine_ags.py use
 diagnostics = []
 failed_files = []
+
+#progress visulization for streamlit 
 
 progress_bar = st.progress(0)
 status = st.empty()
@@ -206,5 +203,6 @@ if selected:
         f"combined_{selected}.csv",
         "text/csv"
     )
+
 
 
