@@ -4,20 +4,16 @@ import re
 from typing import List, Tuple, Dict
 from io import BytesIO
 
-# ─── Your own modules ───
+
 from agsparser import (
     analyze_ags_content,
     parse_ags_file,
     find_hole_id_column
 )
-from cleaners import combine_groups   # ← the existing function you already have
-
-# Optional: official library warning
-try:
-    from python_ags4 import AGS4
-    OFFICIAL_AGS4_AVAILABLE = True
-except ImportError:
-    OFFICIAL_AGS4_AVAILABLE = False
+from cleaners import combine_groups   
+# ────────────────────────────────────────────────
+#STREAMLIT PAGE CONFIGURATION
+# ────────────────────────────────────────────────
 
 # Aurecon colors
 AURECON_GREEN = "#84BD00"
@@ -33,7 +29,7 @@ st.markdown(
 st.markdown("Upload AGS3 or AGS4 files → combine with optional prefix on location IDs.")
 
 # ────────────────────────────────────────────────
-# Mode selection
+# PROMPT USER TO CHOOSE AGS3 OR AGS4 (ST PAGE)
 # ────────────────────────────────────────────────
 st.subheader("Select AGS version mode")
 mode = st.radio(
@@ -50,11 +46,11 @@ if is_ags3_mode:
     st.info("Only legacy AGS3 files (**GROUP style) will be accepted.")
 else:
     st.info("Only AGS4 files (GROUP, HEADING, DATA style) will be accepted.")
-    if not OFFICIAL_AGS4_AVAILABLE:
-        st.warning("python-ags4 library not installed pip install python-ags4 recommended.")
+    
 
 # ────────────────────────────────────────────────
-# Upload areas
+# UPLOAD BUTTONS FOR AGS FILES 
+# 2 OPTIONS/VARIABLES: files_no_prefix, files_with_prefix
 # ────────────────────────────────────────────────
 st.subheader("Upload files")
 
@@ -80,10 +76,17 @@ with col2:
         key="with_prefix"
     )
 
-# Build processing list
-all_uploaded: List[Tuple[st.runtime.uploaded_file_manager.UploadedFile, bool]] = []
+# ────────────────────────────────────────────────
+# creates a *list* containing *tuples (file,bool)* :  all_uploaded = [(file1, False), (file2, True), ...]
+# where False - no need for prefix, True - needs prefix
+# shows how many files were uploaded
+# ────────────────────────────────────────────────
+
+all_uploaded = []
+
 if files_no_prefix:
     all_uploaded.extend([(f, False) for f in files_no_prefix])
+    
 if files_with_prefix:
     all_uploaded.extend([(f, True) for f in files_with_prefix])
 
@@ -203,4 +206,5 @@ if selected:
         f"combined_{selected}.csv",
         "text/csv"
     )
+
 
