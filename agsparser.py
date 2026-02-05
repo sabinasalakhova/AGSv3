@@ -43,7 +43,7 @@ def find_hole_id_column(columns: List[str]) -> Optional[str]:
 def _normalize_token(token: str) -> str:
     if token is None:
         return ""
-    # Strip whitespace, quotes, and any stray BOM at the start of a line
+    # Strip whitespace, quotes at the start of a line
     return token.strip().strip('"').lstrip("\ufeff").upper()
 
 def analyze_ags_content(file_bytes: bytes) -> Dict[str, str]:
