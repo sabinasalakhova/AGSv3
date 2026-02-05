@@ -54,7 +54,7 @@ The application will automatically open in your default web browser at `http://l
    
 ## File Structure
 
-- `workingapp.py` - Main Streamlit application
+- `app.py` - Main Streamlit application
 - `agsparser.py` - AGS file parsing utilities
 - `cleaners.py` - Data cleaning and combining functions
 - `ags_data/` - Sample AGS files for testing
