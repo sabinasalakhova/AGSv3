@@ -271,6 +271,14 @@ def parse_ags_file(file_bytes: bytes, file_name: str) -> Dict[str, pd.DataFrame]
 
             # Add source file column using the provided file name
             df["SOURCE_FILE"] = file_name
+            
+    ### UPDATE THIS TO CHANGE GROUP NAMES TOO
+    group_rename_map = {
+        "?ETH": "WETH",
+        "?LEGD": "LEGD",
+        "?HORN": "HORN",
+    }
+    
 
         group_dfs[group_name] = df
     return group_dfs
