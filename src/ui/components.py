@@ -106,7 +106,7 @@ def display_workbook_download(combined_groups: dict):
         st.download_button("Download selected groups workbook", custom_excel, "custom_groups.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         
 def display_key_data_workbook(key_data_groups: dict):
-    """Ultra-simplified key data display with one-click Excel downloads."""
+    
     
     st.subheader("Key Data Combined by Depth Intervals")
 
@@ -118,7 +118,7 @@ def display_key_data_workbook(key_data_groups: dict):
     st.subheader("📋 Select groups for interval mapping")
     available_groups = sorted(key_data_groups.keys())
     selected_key_groups = st.multiselect(
-        "Choose which groups to include in depth intervals:",
+        "Choose which groups to include in depth intervals : CORE (Coring), WETH (Weathering), GEOL (Geology data), FRAC (Fracture spacing), DETL (Details), and SAMP (Sample data).",
         available_groups,
         default=available_groups,  # All selected by default
         key="key_data_groups"

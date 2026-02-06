@@ -154,18 +154,20 @@ def combine_files(parsed_files: List[ParsedAGSFile]) -> Dict[str, pd.DataFrame]:
     return result
 
 def create_excel_from_dict(data_dict: Dict[str, pd.DataFrame], filename: str = "workbook.xlsx") -> bytes:
-    """Universal Excel builder - takes any dict of DataFrames and returns Excel bytes."""
+    """Excel builder - takes any dict of DataFrames and returns Excel bytes."""
     with io.BytesIO() as buffer:
         with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
             for sheet_name, df in data_dict.items():
                 if not df.empty:
-                    # Clean sheet name (Excel limits)
+                    # Clean sheet name (Excel limits), double checking even though the most common variants have been renamed before, if another name pops up it will change it to _
                     clean_name = str(sheet_name)[:31].replace('/', '_').replace('\\', '_')
                     df.to_excel(writer, sheet_name=clean_name, index=False)
         return buffer.getvalue()
 
 def build_key_data_excel_options(key_data_groups: Dict[str, pd.DataFrame]) -> Dict[str, bytes]:
-    """Builds all key data Excel variants in one go. Returns dict of Excel bytes."""
+    
+    """Main entry point for extracting key data"""
+    
     if not key_data_groups:
         return {}
     
@@ -211,7 +213,6 @@ def get_key_data_intervals(key_data_groups: Dict[str, pd.DataFrame]) -> pd.DataF
         return pd.DataFrame()
     
     # 1. Define Depth Keys for the groups
-    # We no longer need the output column mapping, just the depth definitions.
     group_depth_keys = {
         'CORE': ('CORE_TOP', 'CORE_BOT'),
         'DETL': ('DETL_TOP', 'DETL_BASE'),
@@ -221,72 +222,17 @@ def get_key_data_intervals(key_data_groups: Dict[str, pd.DataFrame]) -> pd.DataF
         'SAMP': ('SAMP_TOP', 'SAMP_BASE')
     }
     
-    # 2. Identify all unique HOLE_IDs
-    all_holes = set()
-    for df in key_data_groups.values():
-        if 'HOLE_ID' in df.columns:
-            # Type safe collection
-            holes = df['HOLE_ID'].dropna().astype(str).unique()
-            all_holes.update(holes)
-    
-    if not all_holes:
-        return pd.DataFrame()
-    
-    # 3. Calculate Master Depth Intervals
-    hole_intervals = {}
-    
-    for hole_id in all_holes:
-        all_depths = []
-        
-        for group_name, (top_col, base_col) in group_depth_keys.items():
-            if group_name not in key_data_groups:
-                continue
-            
-            df = key_data_groups[group_name]
-            hole_data = df[df['HOLE_ID'].astype(str) == hole_id]
-            
-            if hole_data.empty:
-                continue
-            
-            # Robust numeric conversion
-            if top_col in hole_data.columns:
-                depths = pd.to_numeric(hole_data[top_col], errors='coerce').dropna().tolist()
-                all_depths.extend(depths)
-            
-            if base_col in hole_data.columns:
-                depths = pd.to_numeric(hole_data[base_col], errors='coerce').dropna().tolist()
-                all_depths.extend(depths)
-        
-        if all_depths:
-            unique_depths = sorted(list(set(all_depths)))
-            if len(unique_depths) > 1:
-                intervals = []
-                for i in range(len(unique_depths) - 1):
-                    depth_from = unique_depths[i]
-                    depth_to = unique_depths[i + 1]
-                    intervals.append({
-                        'HOLE_ID': hole_id,
-                        'DEPTH_FROM': depth_from,
-                        'DEPTH_TO': depth_to,
-                        'THICKNESS_M': depth_to - depth_from
-                    })
-                hole_intervals[hole_id] = intervals
+    # 2. Use Helper to get Master Intervals
+    result_df = _calculate_master_intervals(key_data_groups, group_depth_keys)
 
-    # 4. Create Master DataFrame Skeleton
-    if not hole_intervals:
+    if result_df.empty:
         return pd.DataFrame()
-    
-    all_rows = []
-    for intervals in hole_intervals.values():
-        all_rows.extend(intervals)
-    
-    result_df = pd.DataFrame(all_rows)
 
-    # 5. Dynamic Column Discovery
+    # 3. Dynamic Column Discovery
     # We want to add all columns from source DFs, except structural ones.
-    structural_cols = {'HOLE_ID', 'SOURCE_FILE', 'GIU_HOLE_ID', 'GIU_NO'}
+    structural_cols = {'HOLE_ID', 'SOURCE_FILE'}
     
-    # Add depth columns to logic to skip them in output (e.g. dont copy CORE_TOP into result)
+    # Add depth columns to logic to skip them in output (ie dont copy CORE_TOP into result)
     for t, b in group_depth_keys.values():
         structural_cols.add(t)
         structural_cols.add(b)
@@ -302,7 +248,7 @@ def get_key_data_intervals(key_data_groups: Dict[str, pd.DataFrame]) -> pd.DataF
                 if col not in result_df.columns:
                     result_df[col] = None
 
-    # 6. Fill Data
+    # 4. Fill Data
     for group_name, (top_col, base_col) in group_depth_keys.items():
         if group_name not in key_data_groups:
             continue
@@ -351,7 +297,7 @@ def get_key_data_intervals_mapped(key_data_groups: Dict[str, pd.DataFrame]) -> p
     if not key_data_groups:
         return pd.DataFrame()
     
-    # Configuration with specific mappings (Source Column -> Output Column)
+    # Configuration with specific mappings (Source Column -> Output Column) this is from legacy code
     group_configs = {
         'CORE': ('CORE_TOP', 'CORE_BOT', {'CORE_RQD': 'RQD', 'CORE_PREC': 'TCR'}),
         'DETL': ('DETL_TOP', 'DETL_BASE', {'DETL_DESC': 'Details'}),
@@ -360,53 +306,15 @@ def get_key_data_intervals_mapped(key_data_groups: Dict[str, pd.DataFrame]) -> p
         'WETH': ('WETH_TOP', 'WETH_BASE', {'WETH_GRAD': 'WETH_GRAD'}),
         'SAMP': ('SAMP_TOP', 'SAMP_BASE', {'SAMP_TYPE': 'SAMP_TYPE', 'SAMP_ID': 'SAMP_ID'})
     }
-    
-    # 1. Identify all unique HOLE_IDs
-    all_holes = set()
-    for df in key_data_groups.values():
-        if 'HOLE_ID' in df.columns:
-            holes = df['HOLE_ID'].dropna().astype(str).unique()
-            all_holes.update(holes)
-    
-    if not all_holes:
-        return pd.DataFrame()
-    
-    # 2. Calculate Master Depth Intervals
-    hole_intervals = {}
-    
-    for hole_id in all_holes:
-        all_depths = []
-        for group_name, (top_col, base_col, _) in group_configs.items():
-            if group_name not in key_data_groups: continue
-            df = key_data_groups[group_name]
-            hole_data = df[df['HOLE_ID'].astype(str) == hole_id]
-            
-            if top_col in hole_data.columns:
-                all_depths.extend(pd.to_numeric(hole_data[top_col], errors='coerce').dropna().tolist())
-            if base_col in hole_data.columns:
-                all_depths.extend(pd.to_numeric(hole_data[base_col], errors='coerce').dropna().tolist())
-        
-        if all_depths:
-            unique_depths = sorted(list(set(all_depths)))
-            if len(unique_depths) > 1:
-                intervals = []
-                for i in range(len(unique_depths) - 1):
-                    intervals.append({
-                        'HOLE_ID': hole_id,
-                        'DEPTH_FROM': unique_depths[i],
-                        'DEPTH_TO': unique_depths[i + 1],
-                        'THICKNESS_M': unique_depths[i + 1] - unique_depths[i]
-                    })
-                hole_intervals[hole_id] = intervals
 
-    if not hole_intervals:
-        return pd.DataFrame()
+    # 1. Prepare simple depth keys for the helper
+    simple_depth_keys = {g: (cfg[0], cfg[1]) for g, cfg in group_configs.items()}
     
-    # 3. Create Result DataFrame
-    all_rows = []
-    for intervals in hole_intervals.values():
-        all_rows.extend(intervals)
-    result_df = pd.DataFrame(all_rows)
+    # 2. Use Helper to get Master Intervals
+    result_df = _calculate_master_intervals(key_data_groups, simple_depth_keys)
+
+    if result_df.empty:
+        return pd.DataFrame()
 
     # Initialize Mapped Columns
     output_columns = set()
@@ -415,7 +323,7 @@ def get_key_data_intervals_mapped(key_data_groups: Dict[str, pd.DataFrame]) -> p
     for col in output_columns:
         result_df[col] = None
 
-    # 4. Fill Data using Mappings
+    # 3. Fill Data using Mappings
     for group_name, (top_col, base_col, column_mapping) in group_configs.items():
         if group_name not in key_data_groups: continue
         source_df = key_data_groups[group_name].copy()
@@ -442,8 +350,8 @@ def get_key_data_intervals_mapped(key_data_groups: Dict[str, pd.DataFrame]) -> p
 
 def get_key_data_intervals_full(key_data_groups: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     """
-    VERSION 2: All Columns ("Like Now")
-    Combine key data groups into depth intervals and automatically fetch ALL available columns.
+    VERSION 2: All Columns )
+    Combine key data groups into depth intervals and automatically attach ALL available columns.
     Includes robust type conversion.
     """
     if not key_data_groups:
@@ -458,17 +366,59 @@ def get_key_data_intervals_full(key_data_groups: Dict[str, pd.DataFrame]) -> pd.
         'SAMP': ('SAMP_TOP', 'SAMP_BASE')
     }
     
-    # 1. Identify all unique HOLE_IDs
+    # 1. Use Helper to get Master Intervals
+    result_df = _calculate_master_intervals(key_data_groups, group_depth_keys)
+
+    if result_df.empty:
+        return pd.DataFrame()
+
+    # 2. Initialize ALL Columns (Dynamic Discovery)
+    structural_cols = {'HOLE_ID', 'SOURCE_FILE', 'GIU_HOLE_ID', 'GIU_NO'}
+    for t, b in group_depth_keys.values():
+        structural_cols.add(t)
+        structural_cols.add(b)
+
+    for group_name in group_depth_keys:
+        if group_name in key_data_groups:
+            cols = key_data_groups[group_name].columns
+            data_cols = [c for c in cols if c not in structural_cols]
+            for col in data_cols:
+                if col not in result_df.columns:
+                    result_df[col] = None
+
+    # 3. Fill Data Dynamically
+    for group_name, (top_col, base_col) in group_depth_keys.items():
+        if group_name not in key_data_groups: continue
+        source_df = key_data_groups[group_name].copy()
+        
+        if top_col not in source_df.columns or base_col not in source_df.columns: continue
+        
+        source_df[top_col] = pd.to_numeric(source_df[top_col], errors='coerce')
+        source_df[base_col] = pd.to_numeric(source_df[base_col], errors='coerce')
+        source_df = source_df.dropna(subset=[top_col, base_col])
+
+        # Identify columns to copy (intersection of source and result, excluding structural)
+        valid_cols = [c for c in source_df.columns if c in result_df.columns and c not in structural_cols]
+        if not valid_cols: continue
+
+        for _, row in source_df.iterrows():
+            mask = (
+                (result_df['HOLE_ID'] == str(row['HOLE_ID'])) & 
+                (result_df['DEPTH_FROM'] >= row[top_col]) & 
+                (result_df['DEPTH_FROM'] < row[base_col])
+            )
+            if mask.any():
+                result_df.loc[mask, valid_cols] = row[valid_cols].values
+
+    return result_df.reset_index(drop=True)
+
+def _calculate_master_intervals(key_data_groups: Dict[str, pd.DataFrame], group_depth_keys: Dict[str, Tuple[str, str]]) -> pd.DataFrame:
+    """Helper: Calculates the master depth slices based on provided groups."""
     all_holes = set()
     for df in key_data_groups.values():
         if 'HOLE_ID' in df.columns:
-            holes = df['HOLE_ID'].dropna().astype(str).unique()
-            all_holes.update(holes)
+            all_holes.update(df['HOLE_ID'].dropna().astype(str).unique())
             
-    if not all_holes:
-        return pd.DataFrame()
-    
-    # 2. Calculate Master Depth Intervals
     hole_intervals = {}
     for hole_id in all_holes:
         all_depths = []
@@ -494,53 +444,9 @@ def get_key_data_intervals_full(key_data_groups: Dict[str, pd.DataFrame]) -> pd.
                         'THICKNESS_M': unique_depths[i + 1] - unique_depths[i]
                     })
                 hole_intervals[hole_id] = intervals
-
-    if not hole_intervals:
-        return pd.DataFrame()
-    
-    # 3. Create Result DataFrame
+                
     all_rows = []
     for intervals in hole_intervals.values():
         all_rows.extend(intervals)
-    result_df = pd.DataFrame(all_rows)
-
-    # 4. Initialize ALL Columns (Dynamic Discovery)
-    structural_cols = {'HOLE_ID', 'SOURCE_FILE', 'GIU_HOLE_ID', 'GIU_NO'}
-    for t, b in group_depth_keys.values():
-        structural_cols.add(t)
-        structural_cols.add(b)
-
-    for group_name in group_depth_keys:
-        if group_name in key_data_groups:
-            cols = key_data_groups[group_name].columns
-            data_cols = [c for c in cols if c not in structural_cols]
-            for col in data_cols:
-                if col not in result_df.columns:
-                    result_df[col] = None
-
-    # 5. Fill Data Dynamically
-    for group_name, (top_col, base_col) in group_depth_keys.items():
-        if group_name not in key_data_groups: continue
-        source_df = key_data_groups[group_name].copy()
-        
-        if top_col not in source_df.columns or base_col not in source_df.columns: continue
-        
-        source_df[top_col] = pd.to_numeric(source_df[top_col], errors='coerce')
-        source_df[base_col] = pd.to_numeric(source_df[base_col], errors='coerce')
-        source_df = source_df.dropna(subset=[top_col, base_col])
-
-        # Identify columns to copy (intersection of source and result, excluding structural)
-        valid_cols = [c for c in source_df.columns if c in result_df.columns and c not in structural_cols]
-        if not valid_cols: continue
-
-        for _, row in source_df.iterrows():
-            mask = (
-                (result_df['HOLE_ID'] == str(row['HOLE_ID'])) & 
-                (result_df['DEPTH_FROM'] >= row[top_col]) & 
-                (result_df['DEPTH_FROM'] < row[base_col])
-            )
-            if mask.any():
-                result_df.loc[mask, valid_cols] = row[valid_cols].values
-
-    return result_df.reset_index(drop=True)
+    return pd.DataFrame(all_rows)
 
