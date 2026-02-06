@@ -106,7 +106,7 @@ class AGS3Parser(AGSParser):
                 # Apply legacy renames
                 rename_map = {
                     "?ETH": "WETH", "?ETH_TOP": "WETH_TOP", "?ETH_BASE": "WETH_BASE",
-                    "?ETH_GRAD": "WETH_GRAD", "?LEGD": "LEGD", "?HORN": "HORN",
+                    "?ETH_GRAD": "WETH_GRAD", "?LEGD": "LEGD", "?HORN": "HORN","?CNMT_ULIM": "CNMT_ULIM","?CNMT_LBID": "CNMT_LBID","?CONS_CVRT": "CONS_CVRT","CONS_CLVG": "CONS_CLVG","CONS_CVLG": "CONS_CVLG","?CONS_REM": "CONS_REM","?TRIX_CU": "TRIX_CU"
                 }
                 df = df.rename(columns=rename_map)
                 df["SOURCE_FILE"] = filename
