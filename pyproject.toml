@@ -2,7 +2,7 @@
 name = "agsv3"
 version = "0.1.0"
 description = "AGS File Processor (AGSv3/4)"
-authors = ["AGS Processor Team"]
+authors = ["Sabina Salakhova @Aurecon 2026"]
 readme = "README.md"
 packages = [{include = "src"}]
 
