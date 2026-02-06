@@ -1,9 +1,9 @@
 import streamlit as st
 import re
-from src.ui.components import setup_page, display_file_uploaders, display_dataframe_viewer
+from src.ui.components import setup_page, display_file_uploaders, display_dataframe_viewer, display_workbook_download, display_key_data_workbook
 from src.parsing import get_parser
 from src.parsing.utils import detect_ags_version
-from src.processing.combiner import combine_files, expand_rows
+from src.processing.combiner import combine_files, expand_rows, get_key_data_groups
 from src.domain.models import AGSVersion, ParsedAGSFile
 
 def main():
@@ -100,6 +100,11 @@ def main():
     
     # 5. Viewing
     display_dataframe_viewer(combined_groups)
+    display_workbook_download(combined_groups)
+    
+    # Key data extraction
+    key_data = get_key_data_groups(combined_groups)
+    display_key_data_workbook(key_data)
 
 if __name__ == "__main__":
     main()

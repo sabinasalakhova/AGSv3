@@ -82,6 +82,8 @@ class AGS3Parser(AGSParser):
                 ensure_group(current_group)
                 headings = []
                 data_started = False
+         
+                 
                 
             elif keyword.startswith("*"):
                 new_headings = [p.lstrip("*") for p in parts if p.strip()]
@@ -97,21 +99,31 @@ class AGS3Parser(AGSParser):
                 data_started = True
                 row_dict = dict(zip(headings, parts[:len(headings)]))
                 group_data[current_group].append(row_dict)
-
+            
+            
         # Convert to DataFrames
         final_groups = {}
+        
+        # Define rename map
+        rename_map = {
+            "?ETH": "WETH", "?ETH_TOP": "WETH_TOP", "?ETH_BASE": "WETH_BASE",
+            "?ETH_GRAD": "WETH_GRAD", "?LEGD": "LEGD", "?HORN": "HORN","?CNMT_ULIM": "CNMT_ULIM","?CNMT_LBID": "CNMT_LBID","?CONS_CVRT": "CONS_CVRT","CONS_CLVG": "CONS_CLVG","CONS_CVLG": "CONS_CVLG","?CONS_REM": "CONS_REM","?TRIX_CU": "TRIX_CU"
+        }
+        
         for gname, rows in group_data.items():
             df = pd.DataFrame(rows)
             if not df.empty:
-                # Apply legacy renames
-                rename_map = {
-                    "?ETH": "WETH", "?ETH_TOP": "WETH_TOP", "?ETH_BASE": "WETH_BASE",
-                    "?ETH_GRAD": "WETH_GRAD", "?LEGD": "LEGD", "?HORN": "HORN","?CNMT_ULIM": "CNMT_ULIM","?CNMT_LBID": "CNMT_LBID","?CONS_CVRT": "CONS_CVRT","CONS_CLVG": "CONS_CLVG","CONS_CVLG": "CONS_CVLG","?CONS_REM": "CONS_REM","?TRIX_CU": "TRIX_CU"
-                }
+                # Apply legacy renames to columns
                 df = df.rename(columns=rename_map)
                 df["SOURCE_FILE"] = filename
-            final_groups[gname] = df
             
+            # Rename group name if it exists in rename_map
+            final_group_name = rename_map.get(gname, gname)
+            final_groups[final_group_name] = df
+            
+                
+
+        
         return ParsedAGSFile(
             filename=filename,
             version=AGSVersion.AGS3,
