@@ -1,72 +1,58 @@
-# AGS File Processor
+# AGS File Processor (AGSv3)
 
-An interactive web application for processing and combining AGS (Association of Geotechnical and Geoenvironmental Specialists) files.
+An interactive web application for processing, validation, and combining AGS (Association of Geotechnical and Geoenvironmental Specialists) files.
 
 ## Features
 
-- Support for both AGS3 (legacy) and AGS4 (modern) file formats
-- Upload and combine multiple AGS files
-- Optional prefix addition to HOLE_ID/LOCA_ID columns
-- Interactive data viewing and CSV export
-- File diagnostics and version validation
+- **Multi-Version Support**: Handles both AGS3 (Legacy) and AGS4 (Modern) files.
+- **Robust Parsing**: 
+  - Uses the official `python-ags4` library for strict AGS4 compliance.
+  - Includes a custom parser for legacy AGS3 support.
+- **Data Combination**: Merges groups from multiple files into single datasets.
+- **Performance**: Optimized processing for large geotechnical datasets.
+- **Privacy First**: All processing happens locally in your browser session.
+
+## Architecture
+
+This project follows a **Clean Architecture** approach:
+
+```text
+AGSv3/
+├── main.py              # Application Entry Point (UI Orchestrator)
+├── pyproject.toml       # Dependency Management (Poetry)
+├── src/                 # Source Code
+│   ├── domain/          # Shared Models (data classes, enums)
+│   ├── parsing/         # Parser Strategies (AGS3/AGS4)
+│   ├── processing/      # Business Logic (Combining, Cleaning)
+│   └── ui/              # Reusable UI Components
+└── legacy_code/         # Archived "Version 1" desktop app (PySimpleGUI)
+```
 
 ## Installation
 
-1. **Clone the repository** (if you haven't already):
-   ```bash
-   git clone https://github.com/sabinasalakhova/AGSv3.git
-   cd AGSv3
-   ```
+This project uses [Poetry](https://python-poetry.org/) for dependency management.
 
-2. **Install dependencies**:
-   ```bash
-   pip install streamlit pandas python-ags4
-   ```
+1.  **Install Poetry** (if you haven't already).
+2.  **Install Dependencies**:
+    ```bash
+    poetry install
+    ```
 
-## Running the Application
-
-To run the AGS File Processor web application, use the following command:
-
+Alternatively, you can install via pip:
 ```bash
-streamlit run app.py
+pip install streamlit pandas python-ags4 openpyxl
 ```
-
-The application will automatically open in your default web browser at `http://localhost:8501`.
 
 ## Usage
 
-1. **Select AGS version mode**: Choose between AGS3 (legacy) or AGS4 (modern) mode
-2. **Upload files**: 
-   - Upload files without prefix in the left column (keeps original HOLE_ID/LOCA_ID)
-   - Upload files with prefix in the right column (adds first 5 alphanumeric characters of filename + '_')
-3. **View combined data**: Browse the combined groups and download results as CSV
-4. (under development)  **Concat data columns**:
-   
-   Prompt the user to choose needed columns >>>>
-   Extract data from columns ('CORE','DETL','WETH','FRAC','GEOL','SAMP')>>>    concat according to depth (ie using WETH_TOP, WETH_BASE, DETL_TOP, DETL_BASE of each needed group and transforming into bigger database DEPTH_FROM and DEPTH_TO) >>>>
-   allow download as csv
+To run the web application:
 
-   (under development) >>> handling group and column names that start with '?' to merge with their equivalent
+```bash
+streamlit run main.py
+```
 
-   
-
-   
-   
-## File Structure
-
-- `app.py` - Main Streamlit application
-- `agsparser.py` - AGS file parsing utilities
-- `cleaners.py` - Data cleaning and combining functions
-- `ags_data/` - Sample AGS files for testing
-- `AGS4.py` - official source for ags4 data processing to which reference should be made
-
-## Requirements
-
-- Python 3.7+
-- streamlit
-- pandas
-- python-ags4 (recommended for AGS4 files)
+## Legacy Code
+The `legacy_code/` directory contains an older desktop-based version of the tool (AGS Processor v1) and specialized calculation scripts. These are kept for reference but are not part of the modern web application.
 
 ## Support
-
 For issues or questions, please open an issue on the GitHub repository.

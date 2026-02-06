@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "agsv3"
+version = "0.1.0"
+description = "AGS File Processor (AGSv3/4)"
+authors = ["AGS Processor Team"]
+readme = "README.md"
+packages = [{include = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+streamlit = "^1.30.0"
+pandas = "^2.0.0"
+python-ags4 = "^0.4.0"
+openpyxl = "^3.1.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+black = "^24.0.0"
+isort = "^5.13.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
