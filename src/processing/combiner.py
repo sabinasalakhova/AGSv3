@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Tuple
 from src.domain.models import ParsedAGSFile
+from unittest import result
 
 def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = [str(col).upper().strip() for col in df.columns]
