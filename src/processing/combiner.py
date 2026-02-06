@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Tuple
 from src.domain.models import ParsedAGSFile
-from unittest import result
 
 def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = [str(col).upper().strip() for col in df.columns]
@@ -12,8 +11,7 @@ def drop_singleton_rows(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df
     # Modern pandas: replace empty strings with NaN, then check count
-    clean = df.replace(r"^\s*$", np.nan, regex=True).
-    clean=result.infer_objects(copy=False)
+    clean = df.replace(r"^\s*$", np.nan, regex=True).infer_objects(copy=False)
     # Require at least 2 non-null values (assuming FILE_SOURCE is 1)
     nn = clean.notna().sum(axis=1)
     return df.loc[nn > 1].reset_index(drop=True)
