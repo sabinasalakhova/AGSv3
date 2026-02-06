@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from typing import List, Tuple, Any
 import io
-from src.processing.combiner import get_key_data_intervals,get_key_data_intervals_mapped,get_key_data_intervals_full,build_key_data_excel_options
+from src.processing.combiner import get_key_data_intervals_mapped,get_key_data_intervals_full,build_key_data_excel_options
 
 def setup_page():
     st.set_page_config(page_title="AGS File Processor", layout="wide")
